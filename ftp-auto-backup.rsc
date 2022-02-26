@@ -6,10 +6,10 @@
 :local encryptBackup false
 :local saveRscExport true
 # ftp config
-:local FTPServer "ftp.smoofil.com"
+:local FTPServer "host/server"
 :local FTPPort 21
-:local FTPUser "mikrotikbackup@smoofil.com"
-:local FTPPass "mikrotikbackup"
+:local FTPUser "ftp user here"
+:local FTPPass "ftp pass here"
 # date config
 :local date [/system clock get date];
 :local months {"jan"="01";"feb"="02";"mar"="03";"apr"="04";"may"="05";"jun"="06";"jul"="07";"aug"="08";"sep"="09";"oct"=10;"nov"=11;"dec"=12};
