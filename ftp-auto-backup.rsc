@@ -6,10 +6,10 @@
 :local encryptBackup false
 :local saveRscExport true
 # ftp config
-:local FTPServer "host/server"
+:local FTPServer "ftp.smoofil.com"
 :local FTPPort 21
-:local FTPUser "ftp user here"
-:local FTPPass "ftp pass here"
+:local FTPUser "mikrotikbackup@smoofil.com"
+:local FTPPass "mikrotikbackup"
 # date config
 :local date [/system clock get date];
 :local months {"jan"="01";"feb"="02";"mar"="03";"apr"="04";"may"="05";"jun"="06";"jul"="07";"aug"="08";"sep"="09";"oct"=10;"nov"=11;"dec"=12};
@@ -34,49 +34,42 @@ if ($saveRscExport) do={/export file=($filename.".rsc") }
 :foreach backupFile in=[/file find] do={
     :set backupFileName ([/file get $backupFile name])
     :if ([:typeof [:find $backupFileName $filename]] != "nil") do={
+        :log info "Memulai upload <$backupFileName>"
         :local attempts 0;
         :local logftp "ftp.log"
         :local cmd "/tool fetch mode=ftp upload=yes user=\"$FTPUser\" password=\"$FTPPass\" port=\"$FTPPort\" src-path=\"$backupFileName\" address=\"$FTPServer\" dst-path=\"$backupFileName\""
-        :delay 60s
         :execute file=$logftp script=$cmd
         :delay 60s
         :local logres [/file get [find name="$logftp.txt"] contents]
         :if ($logres~"finished") do={
             :log warning "<$backupFileName> Berhasil diupload."
-            /file remove [find type="backup"]
-            /file remove [find type="rsc"]
-            /file remove $logftp
         } else {
             :log error "<$backupFileName> Gagal diupload."
-            /file remove [find type="backup"]
-            /file remove [find type="rsc"]
-            /file remove $logftp
         }
         # jika gagal upload, akan mengulang sebanyak 5x
         while ($logres~"failed" and $attempts < 5) do={
-            :if ($saveBackup) do={
-            :if ($encryptBackup = true) do={ /system backup save name=($filename.".backup") }
-            :if ($encryptBackup = false) do={ /system backup save dont-encrypt=yes name=($filename.".backup") }
-            }
-            if ($saveRscExport) do={/export file=($filename.".rsc") }
-            :delay 60s
             :set attempts ($attempts+1);
+            :local newcmd "/tool fetch mode=ftp upload=yes user=\"$FTPUser\" password=\"$FTPPass\" port=\"$FTPPort\" src-path=\"$backupFileName\" address=\"$FTPServer\" dst-path=\"$attempts-$backupFileName\""
+            /file remove $logftp
+            :delay 3s
             :log warning "Akan mencoba upload kembali..."
             :delay 3s
-            :log info "[$attempts] Uploading <$filename>"
-            :execute file=$logftp script=$cmd
+            :log info "[$attempts] Uploading <$backupFileName>"
+            :execute file=$logftp script=$newcmd
             :delay 60s
             :if ($logres~"finished") do={
-                :log warning "<$backupFileName> Berhasil diupload."
-                /file remove [find type="backup"]
-                /file remove [find type="rsc"]
-                /file remove $logftp
+                :log warning "[$attempts] <$backupFileName> Berhasil diupload."
             } else {
-                :log error "<$backupFileName> Gagal diupload."
-                /file remove [find type="backup"]
-                /file remove [find type="rsc"]
-                /file remove $logftp
+                :log error "[$attempts] <$backupFileName> Gagal diupload."
             }
         }
     } 
 }
+
+# remove created backup
+:foreach backupFile in=[/file find] do={
+    :if ([:typeof [:find [/file get $backupFile name] "Backup-"]]!="nil") do={
+        /file remove $backupFile
+    }
+}
+/file remove ftp.log.txt
