@@ -4,7 +4,7 @@
 # backup config
 :local saveBackup true
 :local encryptBackup false
-:local saveRscExport false
+:local saveRscExport true
 # ftp config
 :local FTPServer "host/server"
 :local FTPPort 21
